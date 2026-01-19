@@ -1,11 +1,12 @@
+from aiogram import Bot
 from aiogram import F, Router, types
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 from telegram_bot.handler_search import PaginationState
+from telegram_bot.messages import info_message
 from telegram_bot.keyboards import build_keyboard_with_pagination
 from service import file_manager
 from aiogram.types import InputMediaPhoto, BufferedInputFile
-from aiogram import Bot
 
 
 router = Router()
@@ -36,7 +37,7 @@ async def handle_pagination(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.startswith('item_'))
 async def handle_press_btn(callback: types.CallbackQuery, bot: Bot):
     folder_id = int(callback.data.lstrip('item_'))
-    caption = file_manager.get_text_description(folder_id)  # Описание для группы
+    caption = info_message(file_manager.get_text_description(folder_id))  # Описание для группы
     # Читаем файлы в каталоге игнорируя НЕ-изображения, преобразуем в байты
     images_bytes = file_manager.prepare_images(folder_id)
     if not images_bytes:
@@ -61,7 +62,8 @@ async def handle_press_btn(callback: types.CallbackQuery, bot: Bot):
                     img_bytes,
                     filename=f'image_{i}.jpg'
                 ),
-                caption=caption if i == 0 else None
+                caption=caption if i == 0 else None,
+                parse_mode="HTML"
             )
         )
     # send message with images and text

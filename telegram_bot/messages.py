@@ -18,3 +18,12 @@ msgs_handler_search = {
     'not_found': "<i>По запросу ничего не найдено</i> 🤷🏻‍♂️"
 }
 
+
+def info_message(info: dict | None):
+    if not info:
+        return None
+    text = ""
+    for k, v in info.items():
+        text += f"<b>{k.capitalize().strip()}:</b> {v.strip()}\n"
+    return text
+

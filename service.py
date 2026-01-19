@@ -5,6 +5,9 @@ from PIL import Image
 from pathlib import Path
 from io import BytesIO
 import pillow_heif  # надстройка PIL для чтения блядских файлов айфон
+import csv
+from collections import defaultdict
+from typing import Dict
 
 
 pillow_heif.register_heif_opener()  # важно вызвать
@@ -126,14 +129,28 @@ class FileManager:
             return None
         for file in os.listdir(folder_path):
             if str(file).startswith('info'):
-                # Тут необходимо реализовать логику чтения файла <info>
-                pass
+                info: dict | None = self.read_csv_to_dict(os.path.join(folder_path, str(file)))
+                return info
         return None
 
+    @staticmethod
+    def read_csv_to_dict(file_path: str, delimiter: str = ';') -> Dict[str, str] | None:
+        result = defaultdict(str)
 
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file, delimiter=delimiter)
 
+                for row in reader:
+                    for key, value in row.items():
+                        result[key] = value
 
+        except FileNotFoundError:
+            return None
+        except Exception as e:
+            return None
 
+        return dict(result)
 
 
 file_manager = FileManager()
