@@ -2,8 +2,8 @@ from aiogram import Bot
 from aiogram import F, Router, types
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
-from telegram_bot.handler_search import PaginationState
-from telegram_bot.messages import info_message
+from telegram_bot.handler_search import PaginationState, SearchState
+from telegram_bot.messages import info_message, msgs_callbacks
 from telegram_bot.keyboards import build_keyboard_with_pagination
 from service import file_manager
 from aiogram.types import InputMediaPhoto, BufferedInputFile
@@ -34,27 +34,29 @@ async def handle_pagination(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith('item_'))
+@router.callback_query(F.data.startswith('folderId'))
 async def handle_press_btn(callback: types.CallbackQuery, bot: Bot):
-    folder_id = int(callback.data.lstrip('item_'))
-    caption = info_message(file_manager.get_text_description(folder_id))  # Описание для группы
-    # Читаем файлы в каталоге игнорируя НЕ-изображения, преобразуем в байты
+
+    folder_id = int(callback.data.lstrip('folderId_')) # callback_data=f"folderId_{str(item['folder_id'])}"
+    # caption - text description for a group of images
+    caption: str | None = info_message(file_manager.get_data_from_info_file(folder_id))
+    # find all image files in the folder and convert them to bytes
     images_bytes = file_manager.prepare_images(folder_id)
     if not images_bytes:
-        #  закрываем кнопку (убираем часики)
+        #  сlose the inline button (remove the loading spinner).
         await callback.answer()
 
-        # отправляем сообщение пользователю
+        # send message to user
         await bot.send_message(
             chat_id=callback.from_user.id,
-            text="В этом разделе отсутствуют какие либо файлы"
+            text="В этом разделе отсутствуют какие либо файлы. Возможно сам раздел был удалён"
         )
         return
 
-    # если файлы есть
+    # if files exist
     await callback.answer()
     media_group = []
-    # Telegram API обязательно требует имя файла, даже если это байты, поэтому необходимо задать <filename> для BufferedInputFile
+    # telegram API always requires a filename, even for bytes, so <filename> must be specified for BufferedInputFile
     for i, img_bytes in enumerate(images_bytes):
         media_group.append(
             InputMediaPhoto(
@@ -71,4 +73,33 @@ async def handle_press_btn(callback: types.CallbackQuery, bot: Bot):
         chat_id=callback.from_user.id,
         media=media_group,
     )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("search:"))
+async def search_type_callback(callback: types.CallbackQuery, state: FSMContext):
+
+    search_type = callback.data.split(":")[1]
+
+    match search_type:
+        case "contract":
+            await state.set_state(SearchState.by_contract)
+            text = msgs_callbacks["contract"]
+        case "phone":
+            await state.set_state(SearchState.by_phone)
+            text = msgs_callbacks["phone"]
+        case "address":
+            await state.set_state(SearchState.by_address)
+            text = msgs_callbacks["address"]
+        case "partial":
+            await state.clear()
+            text = msgs_callbacks["partial"]
+        case _:
+            await state.clear()
+            text = "Unknown error"
+    await callback.message.edit_text(
+        text=text,
+        reply_markup=None  # remove kb
+    )
+
     await callback.answer()

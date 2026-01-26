@@ -9,6 +9,12 @@ from telegram_bot.messages import msgs_handler_logout
 import logging
 
 
+"""
+This module contains handlers for deleting user data from the SQLite database 
+and removing all related data from the cache (which stores user information).
+"""
+
+
 router = Router()
 logger = logging.getLogger("telegram_bot")
 
@@ -29,9 +35,7 @@ async def logout_cmd(message: Message, state: FSMContext):
                 reply_markup=logout_keyboard()
             )
         else:
-            await message.answer(
-                text=msgs_handler_logout['logout_confirm'],
-            )
+            return
     except Exception:
         logger.exception("handler_logout.logout_cmd")
 

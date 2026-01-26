@@ -19,7 +19,6 @@ class BanMiddleware(BaseMiddleware):
 
         # Get
         user = data.get("event_from_user")
-        # 3 - а flag indicating the user's status (3 means banned)
         if users_database.cash.get(user.id, None) and users_database.cash[user.id] == 2:
             return
         # If the user isn't banned, forward the message to the handler

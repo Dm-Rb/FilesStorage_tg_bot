@@ -22,6 +22,7 @@ async def start_bot():
     # Set commands
     await bot.set_my_commands([
         BotCommand(command="start", description="Старт/Вход"),
+        BotCommand(command="search", description="Поиск"),
         BotCommand(command="logout", description="Выход"),
 
     ])
@@ -39,9 +40,9 @@ async def process_watchdog_queue(queue):
         # reading from a multiprocessing.Queue in a separate thread without blocking the event loop
         file_event: dict = await loop.run_in_executor(None, queue.get)
         if file_event.get('event', '') == "new":  # new folder
-            file_manager.add_new_folder_in_folders_map(file_event['folder_name'])
+            file_manager.add_folder(file_event['folder_name'])
         elif file_event.get('event', '') == 'del':  # remove folder
-            file_manager.del_folder_from_folders_map(file_event['folder_name'])
+            file_manager.remove_folder(file_event['folder_name'])
         else:
             continue
 
